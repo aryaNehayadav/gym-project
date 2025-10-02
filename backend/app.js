@@ -2,7 +2,8 @@ import express from "express";
 import { config } from "dotenv";
 import cors from "cors";
 import { sendEmail } from "./utils/sendEmail.js";
-
+import mongodbCon from "./config/mongodbCon.js";
+import { Message } from "./model/messageSchema.js";
 const app = express();
 
 
@@ -16,6 +17,8 @@ app.use(
   })
 );
 
+// mogodb connection 
+mongodbCon();
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 
@@ -23,13 +26,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.post("/send/mail", async (req, res, next) => {
-  console.log("🛠 Headers:", req.headers);
-  console.log("📦 Body received:", req.body); // Debug line
+app.post("/send/mail", async (req, res, next) => { 
 
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
-    return next(
+    return(
       res.status(400).json({
         success: false,
         message: "Please provide all details",
@@ -37,17 +38,14 @@ app.post("/send/mail", async (req, res, next) => {
     );
   }
   try {
-    await sendEmail({
-      email: "mn66ne@gmail.com",
-      subject: "GYM WEBSITE CONTACT",
-      message,
-      userEmail: email,
-    });
+    await sendEmail(name,email);
+    await Message.create({ name, email, message });
     res.status(200).json({
       success: true,
       message: "Message Sent Successfully.",
     });
   } catch (error) {
+    console.log("send mail errors :",error);
     res.status(500).json({
       success: false,
       message: " Internal Server Error",
